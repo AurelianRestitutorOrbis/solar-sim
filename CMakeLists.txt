@@ -16,3 +16,4 @@ FetchContent_MakeAvailable(raylib)
 
 add_executable(solar_sim src/main.cpp)
 target_link_libraries(solar_sim PRIVATE raylib)
+target_include_directories(solar_sim PRIVATE src)

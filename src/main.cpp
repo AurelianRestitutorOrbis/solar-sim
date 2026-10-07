@@ -1,6 +1,15 @@
 #include "raylib.h"
 
+#include <iostream>
+#include "sim/body.h"
+#include "sim/vec2.h"
+
+
 int main() {
+
+   
+
+
     // Initialization
     const int screenWidth = 1280;
     const int screenHeight = 720;
