@@ -6,6 +6,8 @@
 #include "sim/vec2.h"
 #include "sim/simulation.h"
 #include <deque>
+#include <algorithm>
+#include "sim/presets.h"
 
 double circularSpeed(double r) {
     return std::sqrt(G * 1.0 / r); // Assuming mass of the central body (Sun) is 1 solar mass
@@ -24,6 +26,10 @@ Vec2 toWorld(Vector2 s) {
             (GetScreenHeight() / 2.0 - s.y) / pixelsPerAU};
 }
 
+float drawRadius(const Body& body) {
+    return std::max(2.0f, static_cast<float>(body.radius * pixelsPerAU));
+}
+
 int main() {
 
    
@@ -33,12 +39,12 @@ int main() {
     InitWindow(1600, 900, "Solar System Simulation");
     SetTargetFPS(60);
 
-   std::vector<Body> bodies = {
-    {"Sun",     1.0,     0.080, 0xFDF900FF, {0.0,   0.0}, {0.0, 0.0}},
-    {"Mercury", 1.66e-7, 0.020, 0x828282FF, {0.387, 0.0}, {0.0, circularSpeed(0.387)}},
-    {"Venus",   2.45e-6, 0.028, 0xFFA100FF, {0.723, 0.0}, {0.0, circularSpeed(0.723)}},
-    {"Earth",   3.00e-6, 0.040, 0x0079F1FF, {1.0,   0.0}, {0.0, circularSpeed(1.0)}},
-};
+      std::vector<Body> bodies = {
+       makeBody(presets[0], {0.0,   0.0}, {0.0, 0.0}),
+       makeBody(presets[1], {0.387, 0.0}, {0.0, circularSpeed(0.387)}),
+       makeBody(presets[2], {0.723, 0.0}, {0.0, circularSpeed(0.723)}),
+       makeBody(presets[3], {1.0,   0.0}, {0.0, circularSpeed(1.0)}),
+   };
 
     const std::size_t maxTrailPoints = 150; // Maximum number of points in the trail
 
@@ -65,7 +71,7 @@ int main() {
 
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { // Start placing a new body
             placing = true;
-            candidate = {"Body", 3.00e-6, 0.03, 0x00E430FF, mouseWorld, {0.0, 0.0}};
+            candidate = makeBody(presets[3], mouseWorld, {0.0, 0.0}); // Default to Earth-like body
         }
 
         if (placing) { // Update candidate's velocity based on mouse position
@@ -108,7 +114,7 @@ int main() {
 
         for (const Body& body : bodies) { 
             DrawCircleV(toScreen(body.position), // Draw the body as a circle
-                static_cast<float>(body.radius * pixelsPerAU),
+                drawRadius(body),
                 GetColor(body.color));
             }
 
@@ -124,7 +130,7 @@ int main() {
 
             DrawLineV(toScreen(candidate.position), GetMousePosition(), GREEN);
             DrawCircleV(toScreen(candidate.position),
-            static_cast<float>(candidate.radius * pixelsPerAU),
+            drawRadius(candidate),
             Fade(GetColor(candidate.color), 0.7f));
         }
         EndDrawing();
