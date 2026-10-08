@@ -48,7 +48,7 @@ int main() {
     const double velocityPerAU = 10.0; // AU/year of speed for placing new bodies
     const int predictionSteps = 5000; // Number of steps to predict
 
-    bool placing = false;
+    bool placing = false; bool paused = false;
     Body candidate;
 
     computeAccelerations(bodies);
@@ -56,6 +56,10 @@ int main() {
     // Main game loop
 
     while (!WindowShouldClose()) {
+
+           if (IsKeyPressed(KEY_SPACE)) {
+       paused = !paused;
+   }
 
         const Vec2 mouseWorld = toWorld(GetMousePosition()); // Convert mouse position to world coordinates
 
@@ -76,9 +80,11 @@ int main() {
             }
         }
 
-        for (int i = 0; i < stepsPerFrame; ++i) {
-            step(bodies, dt);
-            removeCollisions(bodies);
+        if (!paused) {
+            for (int i = 0; i < stepsPerFrame; ++i) {
+                step(bodies, dt);
+                removeCollisions(bodies);
+            }
         }
 
         for (Body& body : bodies) {
@@ -94,17 +100,21 @@ int main() {
 
         for (const Body& body : bodies) {
             const Color color = GetColor(body.color);
-            for (std::size_t k = 1; k < body.trail.size(); ++k) {
+            for (std::size_t k = 1; k < body.trail.size(); ++k) { // Draw the trail with fading effect
                 const float alpha = static_cast<float>(k) / body.trail.size();
                 DrawLineV(toScreen(body.trail[k - 1]), toScreen(body.trail[k]), Fade(color, alpha));
                 }
             }
 
-        for (const Body& body : bodies) {
-            DrawCircleV(toScreen(body.position),
+        for (const Body& body : bodies) { 
+            DrawCircleV(toScreen(body.position), // Draw the body as a circle
                 static_cast<float>(body.radius * pixelsPerAU),
                 GetColor(body.color));
             }
+
+        if (paused) {
+            DrawText("PAUSED", 20, 20, 30, RAYWHITE);
+        }
 
         if (placing) {
             const std::vector<Vec2> path = predictPath(bodies, candidate, dt, predictionSteps);
