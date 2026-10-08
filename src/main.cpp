@@ -46,6 +46,7 @@ int main() {
     while (!WindowShouldClose()) {
         for (int i = 0; i < stepsPerFrame; ++i) {
             step(bodies, dt);
+            removeCollisions(bodies);
         }
 
         for (Body& body : bodies) {
