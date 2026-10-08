@@ -13,7 +13,15 @@ FetchContent_Declare(
 )
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(raylib)
+FetchContent_Declare(
+  raygui
+  GIT_REPOSITORY https://github.com/raysan5/raygui.git
+  GIT_TAG 4.0
+  GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(raygui)
 
 add_executable(solar_sim src/main.cpp src/sim/simulation.cpp)
 target_link_libraries(solar_sim PRIVATE raylib)
 target_include_directories(solar_sim PRIVATE src)
+target_include_directories(solar_sim SYSTEM PRIVATE ${raygui_SOURCE_DIR}/src)

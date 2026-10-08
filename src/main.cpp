@@ -1,4 +1,6 @@
 #include "raylib.h"
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
 
 #include <cmath>
 #include <iostream>
@@ -14,21 +16,68 @@ double circularSpeed(double r) {
 }
 
 const double pixelsPerAU = 250.0; // Scale factor for rendering
+constexpr int panelWidth = 280; // Width of the side panel in pixels
 
+Vector2 viewCentre() {
+    return {(GetScreenWidth() - panelWidth) / 2.0f, GetScreenHeight() / 2.0f};
+}
 
 Vector2 toScreen(Vec2 p) {
-    return {static_cast<float>(GetScreenWidth() / 2 + p.x * pixelsPerAU),
-            static_cast<float>(GetScreenHeight() / 2 - p.y * pixelsPerAU)};
+    const Vector2 c = viewCentre();
+    return {static_cast<float>(c.x + p.x * pixelsPerAU),
+            static_cast<float>(c.y - p.y * pixelsPerAU)};
 }
 
 Vec2 toWorld(Vector2 s) {
-    return {(s.x - GetScreenWidth() / 2.0) / pixelsPerAU,
-            (GetScreenHeight() / 2.0 - s.y) / pixelsPerAU};
+    const Vector2 c = viewCentre();
+    return {(s.x - c.x) / pixelsPerAU,
+            (c.y - s.y) / pixelsPerAU};
 }
 
 float drawRadius(const Body& body) {
     return std::max(2.0f, static_cast<float>(body.radius * pixelsPerAU));
 }
+
+
+
+   void applyDarkTheme() {
+       const auto set = [](int property, unsigned int rgba) {
+           GuiSetStyle(DEFAULT, property, static_cast<int>(rgba));
+       };
+       set(BACKGROUND_COLOR,      0x15171CFF);
+       set(LINE_COLOR,            0x3A3F4BFF);
+       set(BORDER_COLOR_NORMAL,   0x3A3F4BFF);
+       set(BASE_COLOR_NORMAL,     0x22252DFF);
+       set(TEXT_COLOR_NORMAL,     0xC9CED8FF);
+       set(BORDER_COLOR_FOCUSED,  0x6C8CD5FF);
+       set(BASE_COLOR_FOCUSED,    0x2C313CFF);
+       set(TEXT_COLOR_FOCUSED,    0xFFFFFFFF);
+       set(BORDER_COLOR_PRESSED,  0x8FB0FFFF);
+       set(BASE_COLOR_PRESSED,    0x34509AFF);
+       set(TEXT_COLOR_PRESSED,    0xFFFFFFFF);
+       set(BORDER_COLOR_DISABLED, 0x2A2D35FF);
+       set(BASE_COLOR_DISABLED,   0x1B1D23FF);
+       set(TEXT_COLOR_DISABLED,   0x5A5F6BFF);
+   }
+
+      void drawPanel(bool& paused) {
+       const float x = static_cast<float>(GetScreenWidth() - panelWidth);
+       const float left = x + 16.0f;
+       const float width = panelWidth - 32.0f;
+
+       DrawRectangle(static_cast<int>(x), 0, panelWidth, GetScreenHeight(),
+                     GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
+       DrawLine(static_cast<int>(x), 0, static_cast<int>(x), GetScreenHeight(),
+                GetColor(GuiGetStyle(DEFAULT, LINE_COLOR)));
+
+       if (GuiButton({left, 700, width, 32}, paused ? "Resume (Space)" : "Pause (Space)")) {
+           paused = !paused;
+       }
+
+       GuiLabel({left, 746, width, 20}, "Left-drag: place and aim");
+       GuiLabel({left, 766, width, 20}, "Right-click: cancel");
+   }
+
 
 int main() {
 
@@ -38,6 +87,9 @@ int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(1600, 900, "Solar System Simulation");
     SetTargetFPS(60);
+
+    SetWindowMinSize(900, 800);
+    applyDarkTheme();
 
       std::vector<Body> bodies = {
        makeBody(presets[0], {0.0,   0.0}, {0.0, 0.0}),
@@ -67,9 +119,12 @@ int main() {
        paused = !paused;
    }
 
-        const Vec2 mouseWorld = toWorld(GetMousePosition()); // Convert mouse position to world coordinates
+        const Vector2 mouse = GetMousePosition(); // Mouse position in screen coordinates
+        const Vec2 mouseWorld = toWorld(mouse);
+        const bool overPanel = mouse.x >= GetScreenWidth() - panelWidth;
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { // Start placing a new body
+
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !overPanel) { // Start placing a new body
             placing = true;
             candidate = makeBody(presets[3], mouseWorld, {0.0, 0.0}); // Default to Earth-like body
         }
@@ -133,6 +188,10 @@ int main() {
             drawRadius(candidate),
             Fade(GetColor(candidate.color), 0.7f));
         }
+
+        if (placing) GuiLock(); else GuiUnlock();
+        drawPanel(paused);
+
         EndDrawing();
     }
 
