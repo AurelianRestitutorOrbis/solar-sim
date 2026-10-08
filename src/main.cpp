@@ -5,17 +5,26 @@
 #include "sim/body.h"
 #include "sim/vec2.h"
 #include "sim/simulation.h"
+#include <deque>
 
 double circularSpeed(double r) {
     return std::sqrt(G * 1.0 / r); // Assuming mass of the central body (Sun) is 1 solar mass
+}
+
+const double pixelsPerAU = 250.0; // Scale factor for rendering
+const int screenWidth = 1280;
+const int screenHeight = 720;
+
+Vector2 toScreen(Vec2 p) {
+    return {static_cast<float>(screenWidth / 2 + p.x * pixelsPerAU),
+            static_cast<float>(screenHeight / 2 - p.y * pixelsPerAU)};
 }
 
 int main() {
 
    
     // Initialization
-    const int screenWidth = 1280;
-    const int screenHeight = 720;
+
 
     InitWindow(screenWidth, screenHeight, "Solar System Simulation");
     SetTargetFPS(60);
@@ -28,10 +37,11 @@ int main() {
     };
     const std::vector<float> radii = {20.0f, 5.0f, 7.0f, 10.0f}; // Radii for Sun, Mercury, Venus, Earth
     const std::vector<Color> colors = {YELLOW, GRAY, ORANGE, BLUE}; // Colors for Sun, Mercury, Venus, Earth
+    const std::size_t maxTrailPoints = 150; // Maximum number of points in the trail
+    std::vector<std::deque<Vec2>> trails(bodies.size()); // Trails for each body
 
     const double dt = 0.0005; // Time step in years
     const int stepsPerFrame = 5;
-    const double pixelsPerAU = 250.0; // Scale factor for rendering
 
     computeAccelerations(bodies);
 
@@ -40,12 +50,27 @@ int main() {
         for (int i = 0; i < stepsPerFrame; ++i) {
             step(bodies, dt);
         }
+
+        for (std::size_t i = 0; i < bodies.size(); ++i) {
+            trails[i].push_back(bodies[i].position);
+            if (trails[i].size() > maxTrailPoints) {
+                trails[i].pop_front();
+            }
+        }
+
+
         BeginDrawing();
         ClearBackground(BLACK);
-        for (std::size_t i = 0; i < bodies.size(); ++i) {
-            const int x = static_cast<int>(screenWidth / 2 + bodies[i].position.x * pixelsPerAU);
-            const int y = static_cast<int>(screenHeight / 2 - bodies[i].position.y * pixelsPerAU);
-            DrawCircle(x, y, radii[i], colors[i]);
+
+        for (std::size_t i = 0; i < bodies.size(); ++i) { 
+            for (std::size_t k = 1; k < trails[i].size(); ++k) {
+                const float alpha = static_cast<float>(k) / trails[i].size(); // Fade effect for the trail
+                DrawLineV(toScreen(trails[i][k - 1]), toScreen(trails[i][k]), Fade(colors[i], alpha)); // Draw trail with fading effect
+            }   
+        }
+
+        for (std::size_t i = 0; i < bodies.size(); ++i) { // Draw the bodies
+            DrawCircleV(toScreen(bodies[i].position), radii[i], colors[i]); //
         }
 
         EndDrawing();
