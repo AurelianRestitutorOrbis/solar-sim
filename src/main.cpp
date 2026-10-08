@@ -12,12 +12,11 @@ double circularSpeed(double r) {
 }
 
 const double pixelsPerAU = 250.0; // Scale factor for rendering
-const int screenWidth = 1280;
-const int screenHeight = 720;
+
 
 Vector2 toScreen(Vec2 p) {
-    return {static_cast<float>(screenWidth / 2 + p.x * pixelsPerAU),
-            static_cast<float>(screenHeight / 2 - p.y * pixelsPerAU)};
+    return {static_cast<float>(GetScreenWidth() / 2 + p.x * pixelsPerAU),
+            static_cast<float>(GetScreenHeight() / 2 - p.y * pixelsPerAU)};
 }
 
 int main() {
@@ -25,8 +24,8 @@ int main() {
    
     // Initialization
 
-
-    InitWindow(screenWidth, screenHeight, "Solar System Simulation");
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    InitWindow(1600, 900, "Solar System Simulation");
     SetTargetFPS(60);
 
     std::vector<Body> bodies = {
