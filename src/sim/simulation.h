@@ -10,3 +10,6 @@ inline constexpr double G = 4.0 * (pi * pi);
 
 void computeAccelerations(std::vector<Body>& bodies);
 void step(std::vector<Body>& bodies, double dt);
+
+std::vector<Vec2> predictPath(std::vector<Body> bodies, const Body& candidate,
+                              double dt, int steps);

@@ -19,6 +19,11 @@ Vector2 toScreen(Vec2 p) {
             static_cast<float>(GetScreenHeight() / 2 - p.y * pixelsPerAU)};
 }
 
+Vec2 toWorld(Vector2 s) {
+    return {(s.x - GetScreenWidth() / 2.0) / pixelsPerAU,
+            (GetScreenHeight() / 2.0 - s.y) / pixelsPerAU};
+}
+
 int main() {
 
    
@@ -40,10 +45,37 @@ int main() {
     const double dt = 0.0005; // Time step in years
     const int stepsPerFrame = 5;
 
+    const double velocityPerAU = 10.0; // AU/year of speed for placing new bodies
+    const int predictionSteps = 5000; // Number of steps to predict
+
+    bool placing = false;
+    Body candidate;
+
     computeAccelerations(bodies);
 
     // Main game loop
+
     while (!WindowShouldClose()) {
+
+        const Vec2 mouseWorld = toWorld(GetMousePosition()); // Convert mouse position to world coordinates
+
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) { // Start placing a new body
+            placing = true;
+            candidate = {"Body", 3.00e-6, 0.03, 0x00E430FF, mouseWorld, {0.0, 0.0}};
+        }
+
+        if (placing) { // Update candidate's velocity based on mouse position
+            candidate.velocity = (mouseWorld - candidate.position) * velocityPerAU;
+
+            if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+                placing = false;
+            } else if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+                bodies.push_back(candidate);
+                computeAccelerations(bodies);
+                placing = false;
+            }
+        }
+
         for (int i = 0; i < stepsPerFrame; ++i) {
             step(bodies, dt);
             removeCollisions(bodies);
@@ -68,12 +100,23 @@ int main() {
                 }
             }
 
-for (const Body& body : bodies) {
-    DrawCircleV(toScreen(body.position),
+        for (const Body& body : bodies) {
+            DrawCircleV(toScreen(body.position),
                 static_cast<float>(body.radius * pixelsPerAU),
                 GetColor(body.color));
-}
+            }
 
+        if (placing) {
+            const std::vector<Vec2> path = predictPath(bodies, candidate, dt, predictionSteps);
+            for (std::size_t k = 1; k < path.size(); ++k) {
+                DrawLineV(toScreen(path[k - 1]), toScreen(path[k]), Fade(WHITE, 0.6f));
+            }
+
+            DrawLineV(toScreen(candidate.position), GetMousePosition(), GREEN);
+            DrawCircleV(toScreen(candidate.position),
+            static_cast<float>(candidate.radius * pixelsPerAU),
+            Fade(GetColor(candidate.color), 0.7f));
+        }
         EndDrawing();
     }
 

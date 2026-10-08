@@ -60,3 +60,28 @@ void removeCollisions(std::vector<Body>& bodies) {
 
     computeAccelerations(bodies);
 }
+
+std::vector<Vec2> predictPath(std::vector<Body> bodies, const Body& candidate,
+                              double dt, int steps) {
+    bodies.push_back(candidate);
+    computeAccelerations(bodies);
+
+    std::vector<Vec2> path;
+    path.push_back(candidate.position);
+
+    for (int s = 0; s < steps; ++s) {
+        step(bodies, dt);
+
+        const Body& self = bodies.back();
+        path.push_back(self.position);
+
+        for (std::size_t i = 0; i + 1 < bodies.size(); ++i) {
+            const double dist = (bodies[i].position - self.position).length();
+            if (dist < bodies[i].radius + self.radius) {
+                return path;   // predicted impact
+            }
+        }
+    }
+
+    return path;
+}
