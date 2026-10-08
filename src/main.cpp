@@ -28,16 +28,14 @@ int main() {
     InitWindow(1600, 900, "Solar System Simulation");
     SetTargetFPS(60);
 
-    std::vector<Body> bodies = {
-        {"Sun", 1.0, {0.0, 0.0}, {0.0, 0.0}},
-        {"Mercury",1.66e-7, {0.387, 0.0}, {0.0, circularSpeed(0.387)}},
-        {"Venus", 2.45e-6, {0.723, 0.0}, {0.0, circularSpeed(0.723)}},
-        {"Earth", 3.00e-6, {1.0, 0.0}, {0.0, circularSpeed(1.0)}}
-    };
-    const std::vector<float> radii = {20.0f, 5.0f, 7.0f, 10.0f}; // Radii for Sun, Mercury, Venus, Earth
-    const std::vector<Color> colors = {YELLOW, GRAY, ORANGE, BLUE}; // Colors for Sun, Mercury, Venus, Earth
+   std::vector<Body> bodies = {
+    {"Sun",     1.0,     0.080, 0xFDF900FF, {0.0,   0.0}, {0.0, 0.0}},
+    {"Mercury", 1.66e-7, 0.020, 0x828282FF, {0.387, 0.0}, {0.0, circularSpeed(0.387)}},
+    {"Venus",   2.45e-6, 0.028, 0xFFA100FF, {0.723, 0.0}, {0.0, circularSpeed(0.723)}},
+    {"Earth",   3.00e-6, 0.040, 0x0079F1FF, {1.0,   0.0}, {0.0, circularSpeed(1.0)}},
+};
+
     const std::size_t maxTrailPoints = 150; // Maximum number of points in the trail
-    std::vector<std::deque<Vec2>> trails(bodies.size()); // Trails for each body
 
     const double dt = 0.0005; // Time step in years
     const int stepsPerFrame = 5;
@@ -50,27 +48,30 @@ int main() {
             step(bodies, dt);
         }
 
-        for (std::size_t i = 0; i < bodies.size(); ++i) {
-            trails[i].push_back(bodies[i].position);
-            if (trails[i].size() > maxTrailPoints) {
-                trails[i].pop_front();
+        for (Body& body : bodies) {
+            body.trail.push_back(body.position);
+            if (body.trail.size() > maxTrailPoints) {
+                body.trail.pop_front();
+                }
             }
-        }
 
 
         BeginDrawing();
         ClearBackground(BLACK);
 
-        for (std::size_t i = 0; i < bodies.size(); ++i) { 
-            for (std::size_t k = 1; k < trails[i].size(); ++k) {
-                const float alpha = static_cast<float>(k) / trails[i].size(); // Fade effect for the trail
-                DrawLineV(toScreen(trails[i][k - 1]), toScreen(trails[i][k]), Fade(colors[i], alpha)); // Draw trail with fading effect
-            }   
-        }
+        for (const Body& body : bodies) {
+            const Color color = GetColor(body.color);
+            for (std::size_t k = 1; k < body.trail.size(); ++k) {
+                const float alpha = static_cast<float>(k) / body.trail.size();
+                DrawLineV(toScreen(body.trail[k - 1]), toScreen(body.trail[k]), Fade(color, alpha));
+                }
+            }
 
-        for (std::size_t i = 0; i < bodies.size(); ++i) { // Draw the bodies
-            DrawCircleV(toScreen(bodies[i].position), radii[i], colors[i]); //
-        }
+for (const Body& body : bodies) {
+    DrawCircleV(toScreen(body.position),
+                static_cast<float>(body.radius * pixelsPerAU),
+                GetColor(body.color));
+}
 
         EndDrawing();
     }
