@@ -28,9 +28,10 @@ struct Vec2 {
 constexpr Vec2 operator+(Vec2 a, Vec2 b) {
     return {a.x + b.x, a.y + b.y};
 }
-constexpr Vec2 operator*(Vec2 a, Vec2 b) {
-    return {a.x * b.x, a.y * b.y};
-}
+
+constexpr Vec2 operator*(Vec2 v, double s) {
+     return {v.x * s, v.y * s}; }
+
 constexpr Vec2 operator*(double s, Vec2 v) {
     return {v.x * s, v.y * s};
 }

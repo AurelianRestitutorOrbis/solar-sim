@@ -4,8 +4,9 @@
 
 struct Body {
     std::string name;
-    Vec2 position; // AU
-    Vec2 velocity; // AU/day
-    Vec2 acceleration; // AU/day^2
     double mass = 0.0;
+    Vec2 position; // AU
+    Vec2 velocity; // AU/year
+    Vec2 acceleration; // AU/year^2
+
 };

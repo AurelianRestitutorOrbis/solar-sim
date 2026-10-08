@@ -14,6 +14,6 @@ FetchContent_Declare(
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(raylib)
 
-add_executable(solar_sim src/main.cpp)
+add_executable(solar_sim src/main.cpp src/sim/simulation.cpp)
 target_link_libraries(solar_sim PRIVATE raylib)
 target_include_directories(solar_sim PRIVATE src)
