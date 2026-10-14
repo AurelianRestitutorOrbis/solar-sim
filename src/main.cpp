@@ -10,6 +10,8 @@
 #include <deque>
 #include <algorithm>
 #include "sim/presets.h"
+#include <cstdio>
+#include <string>
 
 double circularSpeed(double r) {
     return std::sqrt(G * 1.0 / r); // Assuming mass of the central body (Sun) is 1 solar mass
@@ -17,6 +19,16 @@ double circularSpeed(double r) {
 
 const double pixelsPerAU = 250.0; // Scale factor for rendering
 constexpr int panelWidth = 280; // Width of the side panel in pixels
+
+struct Editor {
+    int selected = 3;
+    int loaded = -1;
+    char name[32] = "";
+    bool editingName = false;
+    float logMass = 0.0f;
+    float logRadius = 0.0f;
+    Color color = WHITE;
+};
 
 Vector2 viewCentre() {
     return {(GetScreenWidth() - panelWidth) / 2.0f, GetScreenHeight() / 2.0f};
@@ -60,7 +72,27 @@ float drawRadius(const Body& body) {
        set(TEXT_COLOR_DISABLED,   0x5A5F6BFF);
    }
 
-      void drawPanel(bool& paused) {
+   void loadPreset(Editor& editor, int index) {
+    const Preset& preset = presets[index];
+    std::snprintf(editor.name, sizeof(editor.name), "%s", preset.name);
+    editor.logMass = static_cast<float>(std::log10(preset.earthMasses));
+    editor.logRadius = static_cast<float>(std::log10(preset.earthRadii));
+    editor.color = GetColor(preset.color);
+    editor.loaded = index;
+
+   }
+
+   Body bodyFromEditor(const Editor& editor, Vec2 position) {
+    return makeBody(editor.name,
+                    std::pow(10.0, editor.logMass),
+                    std::pow(10.0, editor.logRadius),
+                    static_cast<std::uint32_t>(ColorToInt(editor.color)),
+                    position,
+                    {0.0, 0.0});
+   }
+
+
+      void drawPanel(Editor& editor, bool& paused, const std::string& presetNames) {
        const float x = static_cast<float>(GetScreenWidth() - panelWidth);
        const float left = x + 16.0f;
        const float width = panelWidth - 32.0f;
@@ -69,6 +101,44 @@ float drawRadius(const Body& body) {
                      GetColor(GuiGetStyle(DEFAULT, BACKGROUND_COLOR)));
        DrawLine(static_cast<int>(x), 0, static_cast<int>(x), GetScreenHeight(),
                 GetColor(GuiGetStyle(DEFAULT, LINE_COLOR)));
+
+        GuiLabel({left, 14, width, 20}, "PRESETS");
+
+        GuiToggleGroup({left, 40, (width - 2) / 2, 26}, presetNames.c_str(), &editor.selected);
+
+        if (editor.selected != editor.loaded) {
+            loadPreset(editor, editor.selected);
+        }
+
+        GuiLabel({left, 222, width, 20}, "CUSTOMISE");
+
+        GuiLabel({left, 246, width, 20}, "Name");
+
+        if (GuiTextBox({left, 266, width, 28}, editor.name, sizeof(editor.name), editor.editingName)) {
+            editor.editingName = !editor.editingName;
+        }
+
+        const double earthMasses = std::pow(10.0, editor.logMass);
+
+        GuiLabel({left, 304, width, 20},
+                    TextFormat(earthMasses >= 1000.0 ? "Mass: %.0f Earth masses" : "Mass: %.3g Earth masses",
+                            earthMasses));
+                            
+        GuiSlider({left, 326, width, 18}, nullptr, nullptr, &editor.logMass, -4.0f, 6.5f);
+
+        GuiLabel({left, 354, width, 20},
+                    TextFormat("Radius: %.3g Earth radii", std::pow(10.0, editor.logRadius)));
+
+        GuiSlider({left, 376, width, 18}, nullptr, nullptr, &editor.logRadius, -1.5f, 2.5f);
+
+        GuiLabel({left, 404, width, 20}, "Colour");
+
+        GuiColorPicker({left, 426, width - 30, 150}, nullptr, &editor.color);
+
+        const Body preview = bodyFromEditor(editor, {0.0, 0.0});
+        GuiLabel({left, 590, width, 20}, "Preview");
+
+        DrawCircleV({x + panelWidth / 2.0f, 650.0f}, drawRadius(preview), editor.color);
 
        if (GuiButton({left, 700, width, 32}, paused ? "Resume (Space)" : "Pause (Space)")) {
            paused = !paused;
@@ -111,11 +181,20 @@ int main() {
 
     computeAccelerations(bodies);
 
+    std::string presetNames;
+        for (std::size_t i = 0; i < presets.size(); ++i) {
+            if (i > 0) presetNames += (i % 2 == 0) ? "\n" : ";";
+            presetNames += presets[i].name;
+        }    
+
+   Editor editor;
+   loadPreset(editor, editor.selected);
+
     // Main game loop
 
     while (!WindowShouldClose()) {
 
-           if (IsKeyPressed(KEY_SPACE)) {
+           if (IsKeyPressed(KEY_SPACE) && !editor.editingName) {
        paused = !paused;
    }
 
@@ -126,8 +205,9 @@ int main() {
 
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && !overPanel) { // Start placing a new body
             placing = true;
-            candidate = makeBody(presets[3], mouseWorld, {0.0, 0.0}); // Default to Earth-like body
-        }
+            editor.editingName = false;
+            candidate = bodyFromEditor(editor, mouseWorld);
+            }
 
         if (placing) { // Update candidate's velocity based on mouse position
             candidate.velocity = (mouseWorld - candidate.position) * velocityPerAU;
@@ -190,7 +270,7 @@ int main() {
         }
 
         if (placing) GuiLock(); else GuiUnlock();
-        drawPanel(paused);
+        drawPanel(editor, paused, presetNames);
 
         EndDrawing();
     }
