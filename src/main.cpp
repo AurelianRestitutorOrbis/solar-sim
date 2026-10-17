@@ -272,6 +272,8 @@ int main() {
         if (placing) GuiLock(); else GuiUnlock();
         drawPanel(editor, paused, presetNames);
 
+        DrawFPS(10, 50);
+
         EndDrawing();
     }
 
