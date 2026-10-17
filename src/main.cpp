@@ -226,7 +226,7 @@ int main() {
                 step(bodies, dt);
                 removeCollisions(bodies);
             }
-        }
+        
 
         for (Body& body : bodies) {
             body.trail.push_back(body.position);
@@ -234,7 +234,7 @@ int main() {
                 body.trail.pop_front();
                 }
             }
-
+        }
 
         BeginDrawing();
         ClearBackground(BLACK);
