@@ -81,6 +81,8 @@ std::vector<Vec2> predictPath(std::vector<Body> bodies, const Body& candidate,
                 return path;   // predicted impact
             }
         }
+
+        removeCollisions(bodies); // after the impact check, so the candidate is still bodies.back()
     }
 
     return path;
