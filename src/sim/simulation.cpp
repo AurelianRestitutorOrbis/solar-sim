@@ -8,13 +8,13 @@ void computeAccelerations(std::vector<Body>& bodies) {
     }
 
     for (std::size_t i = 0; i < bodies.size(); ++i) {
-        for (std::size_t j = 0; j < bodies.size(); ++j) {
-            if (i == j) continue;
-
+        for (std::size_t j = i + 1; j < bodies.size(); ++j) {
             Vec2 r = bodies[j].position - bodies[i].position;
             double dist = r.length();
             if (dist == 0.0) continue; // Avoid division by zero
-            bodies[i].acceleration += (G * bodies[j].mass / (dist * dist * dist)) * r;
+            const Vec2 pull = r * (G / (dist * dist * dist));
+            bodies[i].acceleration += pull * bodies[j].mass;
+            bodies[j].acceleration -= pull * bodies[i].mass;
         }
     }
 }
